@@ -8,16 +8,20 @@ class Clustering():
 	def get_data(self):
 		class_num=set()
 		last=[]
-		with open('german.txt','r') as f:
+		with open('mnist.txt','r') as f:
 			for line in f:
-				t=[float(x) for x in line.split(',')[:-1]]
-				self.data.append(t)
-				class_num.add(line.rsplit(',',1)[-1].strip())
-				last.append(line.rsplit(',',1)[-1].strip())
+				t=[float(x) for x in line.split(',')]
+				self.data.append(t[:-1])
+				last.append(t[-1])
 		self.feature_num=len(self.data[0])
-		self.class_num=len(class_num)
+		self.class_num=len(set(last))
 		self.data_num=len(self.data)
-		print('1:%i\t-1:%i'%(last.count('1'),last.count('-1')))
+		print('class number:',self.class_num)
+		self.data=np.array(self.data)
+		class_set=sorted(set(last))
+		for class_name in class_set:
+			print('%i:%i'%(class_name,last.count(class_name)),end='\t')
+		#print('1:%i\t-1:%i'%(last.count('1'),last.count('-1')))
 		#print(class_num)
 	def get_random(self,length,min,max):
 		return [random.uniform(min,max) for x in range(length)]
@@ -32,7 +36,7 @@ class Clustering():
 			new=np.zeros((class_num,feature_num))
 			count=np.zeros((class_num,1),dtype='int')
 			for item in data:
-				min=200
+				min=200000000
 				min_index=-1
 				for index,c in enumerate(classes):
 					t=item-c
@@ -50,8 +54,10 @@ class Clustering():
 			print(count)
 	def nmf(self,data):
 		data=np.array(data)
-		u=[[random.random() for column in range(self.class_num)] for row in range(self.feature_num)]
-		v=[[random.random() for column in range(self.class_num)] for row in range(self.data_num)]
+		the_max=np.max(data)
+		the_min=np.min(data)
+		u=[self.get_random(self.class_num,the_min,the_max) for row in range(self.feature_num)]
+		v=[self.get_random(self.class_num,the_min,the_max) for row in range(self.data_num)]
 		u=np.array(u)
 		v=np.array(v)
 		x=data.T
@@ -103,6 +109,6 @@ class Clustering():
 
 if __name__=='__main__':
 	c=Clustering()
-	#c.k_means(np.array(c.data),c.class_num)
-	c.nmf(c.data)
-	#c.spectral(3)
+	#c.k_means(c.data,c.class_num)
+	#c.nmf(c.data)
+	c.spectral(3)
