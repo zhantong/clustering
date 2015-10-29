@@ -61,7 +61,8 @@ class Clustering():
 		while 1:
 			#new=[[0]*feature_num for x in range(class_num)]
 			new=np.zeros((class_num,feature_num))
-			count=[0]*class_num
+			#count=[0]*class_num
+			count=np.zeros((class_num,1),dtype='int')
 			for item in data:
 				min=200
 				min_index=-1
@@ -74,12 +75,9 @@ class Clustering():
 						min_index=index
 				
 				new[min_index]+=item
-				count[min_index]+=1
+				count[min_index][0]+=1
 			#print(new)
-			classes=[]
-			for index,c in enumerate(new):
-				classes.append(c/count[index])
-			classes=np.array(classes)
+			classes=new/count
 			print(count)
 			#print(classes)
 			#break
@@ -192,5 +190,5 @@ class Clustering():
 
 if __name__=='__main__':
 	c=Clustering()
-	#c.k_means(np.array(c.data),c.class_num)
-	c.spectral(9)
+	c.k_means(np.array(c.data),c.class_num)
+	#c.spectral(9)
