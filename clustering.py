@@ -77,7 +77,10 @@ class Clustering():
 				new[min_index]+=item
 				count[min_index][0]+=1
 			#print(new)
-			classes=new/count
+			new=new/count
+			if (classes==new).all():
+				break
+			classes=new
 			print(count)
 			#print(classes)
 			#break
@@ -142,26 +145,35 @@ class Clustering():
 		#print(res)
 
 	def spectral(self,n):
-		dists=[[0]*self.data_num for x in range(self.data_num)]
-		w=[[0]*self.data_num for x in range(self.data_num)]
-		d=[[0]*self.data_num for x in range(self.data_num)]
-		w=np.array(w)
-		d=np.array(d)
+		data=np.array(self.data)
+		#dists=[[0]*self.data_num for x in range(self.data_num)]
+		dists=np.zeros((self.data_num,self.data_num))
+		#w=[[0]*self.data_num for x in range(self.data_num)]
+		w=np.zeros((self.data_num,self.data_num))
+		#d=[[0]*self.data_num for x in range(self.data_num)]
+		#w=np.array(w)
+		#d=np.array(d)
 		for row in range(self.data_num):
 			for column in range(row,self.data_num):
-				s=0
-				for (a,b) in zip(self.data[row],self.data[column]):
-					s+=pow((a-b),2)
+				t=data[row]-data[column]
+				s=np.sum(t*t)
 				dists[row][column],dists[column][row]=s,s
+		sort_all=np.argsort(dists)
 		for row in range(self.data_num):
-			for item in sorted(dists[row])[:n+1]:
-				w[row][dists[row].index(item)]=-1
-				w[dists[row].index(item)][row]=-1
+			for arg in sort_all[row][:n+1]:
+				w[row][arg]=-1
+				w[arg][row]=-1
+		for row in range(self.data_num):
+			w[row][row]=-np.sum(w[row])-1
+#		for row in range(self.data_num):
+#			for item in sorted(dists[row])[:n+1]:
+#				w[row][dists[row].index(item)]=-1
+#				w[dists[row].index(item)][row]=-1
 		#for row in range(self.data_num):
 			#d[row][row]=sum(w[row])
 		#l=d-w
-		for row in range(self.data_num):
-			w[row][row]=-sum(w[row])-1
+#		for row in range(self.data_num):
+#			w[row][row]=-sum(w[row])-1
 		r,v=np.linalg.eig(w)
 		r=r.tolist()
 		res=[]
@@ -190,5 +202,5 @@ class Clustering():
 
 if __name__=='__main__':
 	c=Clustering()
-	c.k_means(np.array(c.data),c.class_num)
-	#c.spectral(9)
+	#c.k_means(np.array(c.data),c.class_num)
+	c.spectral(3)
