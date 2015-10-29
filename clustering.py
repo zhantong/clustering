@@ -84,33 +84,43 @@ class Clustering():
 			print(count)
 			#print(classes)
 			#break
-	def nmf(self):
+	def nmf(self,data):
+		data=np.array(data)
 		u=[[random.random() for column in range(self.class_num)] for row in range(self.feature_num)]
 		v=[[random.random() for column in range(self.class_num)] for row in range(self.data_num)]
-		u=array(u)
-		v=array(v)
-		x=array(self.data).T
+		u=np.array(u)
+		v=np.array(v)
+		x=data.T
 		n=50
 		while n:
 			#print(len(v),len(v[0]))
-			u=u*dot(x,v)/dot(dot(u,v.T),v)
-			v=v*dot(x.T,u)/dot(dot(v,u.T),u)
+			u=u*np.dot(x,v)/np.dot(np.dot(u,v.T),v)
+			v=v*np.dot(x.T,u)/np.dot(np.dot(v,u.T),u)
 			n-=1
-		u=u.tolist()
-		v=v.tolist()
-		#print(len(v),len(v[0]))
-		for column in range(self.class_num):
-			s=0
-			for u_row in range(self.feature_num):
-				s+=u[u_row][column]*u[u_row][column]
-			s=s**0.5
-			for row in range(self.data_num):
-				v[row][column]*=s
-		#print(v[:10])
+		u_s=np.sum(u*u,axis=0)**0.5
+		t=np.tile(u_s,(self.data_num,1))
+		v=v*t
+		maxs=np.argmax(v,axis=1)
 		count=[0]*self.class_num
-		for f in v:
-			count[f.index(max(f))]+=1
+		for arg in maxs:
+			count[arg]+=1
 		print(count)
+
+#		u=u.tolist()
+#		v=v.tolist()
+#		#print(len(v),len(v[0]))
+#		for column in range(self.class_num):
+#			s=0
+#			for u_row in range(self.feature_num):
+#				s+=u[u_row][column]*u[u_row][column]
+#			s=s**0.5
+#			for row in range(self.data_num):
+#				v[row][column]*=s
+#		#print(v[:10])
+#		count=[0]*self.class_num
+#		for f in v:
+#			count[f.index(max(f))]+=1
+#		print(count)
 
 	def spectral_bak(self,n):
 		t1=time.time()
@@ -146,13 +156,8 @@ class Clustering():
 
 	def spectral(self,n):
 		data=np.array(self.data)
-		#dists=[[0]*self.data_num for x in range(self.data_num)]
 		dists=np.zeros((self.data_num,self.data_num))
-		#w=[[0]*self.data_num for x in range(self.data_num)]
-		w=np.zeros((self.data_num,self.data_num))
-		#d=[[0]*self.data_num for x in range(self.data_num)]
-		#w=np.array(w)
-		#d=np.array(d)
+		w=np.zeros((self.data_num,self.data_num),dtype='int')
 		for row in range(self.data_num):
 			for column in range(row,self.data_num):
 				t=data[row]-data[column]
@@ -165,35 +170,11 @@ class Clustering():
 				w[arg][row]=-1
 		for row in range(self.data_num):
 			w[row][row]=-np.sum(w[row])-1
-#		for row in range(self.data_num):
-#			for item in sorted(dists[row])[:n+1]:
-#				w[row][dists[row].index(item)]=-1
-#				w[dists[row].index(item)][row]=-1
-		#for row in range(self.data_num):
-			#d[row][row]=sum(w[row])
-		#l=d-w
-#		for row in range(self.data_num):
-#			w[row][row]=-sum(w[row])-1
 		res=[]
 		r,v=np.linalg.eig(w)
 		for arg in np.argsort(r)[:self.class_num]:
 			res.append(v[arg])
-#		r=r.tolist()
-#		res=[]
-#		for item in sorted(r)[:self.class_num]:
-#			res.append(v[r.index(item)])
 		res=np.dstack(res)[0].tolist()
-#		the_max=0
-#		the_min=0
-#		for row in range(len(res)):
-#			c_max=max(res[row])
-#			c_min=min(res[row])
-#			if c_max>the_max:
-#				the_max=c_max
-#			if c_min<the_min:
-#				the_min=c_min
-#		print(the_max,the_min)
-		#print(sorted(r)[:20])
 		self.k_means(res,self.class_num)
 
 
@@ -206,4 +187,5 @@ class Clustering():
 if __name__=='__main__':
 	c=Clustering()
 	#c.k_means(np.array(c.data),c.class_num)
-	c.spectral(3)
+	c.nmf(c.data)
+	#c.spectral(3)
