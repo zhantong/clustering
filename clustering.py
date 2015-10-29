@@ -1,5 +1,5 @@
 import random
-from numpy import *
+import numpy as np
 import time
 class Clustering():
 	def __init__(self):
@@ -19,16 +19,19 @@ class Clustering():
 		self.data_num=len(self.data)
 		print('1:%i\t-1:%i'%(last.count('1'),last.count('-1')))
 		#print(class_num)
-
-	def get_random(self,feature_num):
+	def get_random(self,length,min,max):
 		#return [random.random() for x in range(self.feature_num)]
-		return [random.uniform(-0.3,0.2) for x in range(feature_num)]
-	def k_means(self,data,class_num):
+		return [random.uniform(min,max) for x in range(length)]
+	def k_means_bak(self,data,class_num):
 		feature_num=len(data[0])
-		classes=[self.get_random(feature_num) for x in range(class_num)]
+		the_max=np.max(data)
+		the_min=np.min(data)
+		classes=[self.get_random(feature_num,the_min,the_max) for x in range(class_num)]
+		#classes=np.array(classes)
 		#print(c)
 		while 1:
 			new=[[0]*feature_num for x in range(class_num)]
+			#new=np.array(new)
 			count=[0]*class_num
 			for item in data:
 				min=200
@@ -45,6 +48,38 @@ class Clustering():
 			classes=[]
 			for index,c in enumerate(new):
 				classes.append([item/count[index] for item in c])
+			print(count)
+			#print(classes)
+			#break
+	def k_means(self,data,class_num):
+		feature_num=len(data[0])
+		the_max=np.max(data)
+		the_min=np.min(data)
+		classes=[self.get_random(feature_num,the_min,the_max) for x in range(class_num)]
+		classes=np.array(classes)
+		#print(c)
+		while 1:
+			#new=[[0]*feature_num for x in range(class_num)]
+			new=np.zeros((class_num,feature_num))
+			count=[0]*class_num
+			for item in data:
+				min=200
+				min_index=-1
+				for index,c in enumerate(classes):
+					t=item-c
+					dist=np.sum(t*t)
+					#dist=sum([(a-b)*(a-b) for (a,b) in zip(item,c)])
+					if dist<min:
+						min=dist
+						min_index=index
+				
+				new[min_index]+=item
+				count[min_index]+=1
+			#print(new)
+			classes=[]
+			for index,c in enumerate(new):
+				classes.append(c/count[index])
+			classes=np.array(classes)
 			print(count)
 			#print(classes)
 			#break
@@ -112,8 +147,8 @@ class Clustering():
 		dists=[[0]*self.data_num for x in range(self.data_num)]
 		w=[[0]*self.data_num for x in range(self.data_num)]
 		d=[[0]*self.data_num for x in range(self.data_num)]
-		w=array(w)
-		d=array(d)
+		w=np.array(w)
+		d=np.array(d)
 		for row in range(self.data_num):
 			for column in range(row,self.data_num):
 				s=0
@@ -129,22 +164,22 @@ class Clustering():
 		#l=d-w
 		for row in range(self.data_num):
 			w[row][row]=-sum(w[row])-1
-		r,v=linalg.eig(w)
+		r,v=np.linalg.eig(w)
 		r=r.tolist()
 		res=[]
 		for item in sorted(r)[:self.class_num]:
 			res.append(v[r.index(item)])
-		res=dstack(res)[0].tolist()
-		the_max=0
-		the_min=0
-		for row in range(len(res)):
-			c_max=max(res[row])
-			c_min=min(res[row])
-			if c_max>the_max:
-				the_max=c_max
-			if c_min<the_min:
-				the_min=c_min
-		print(the_max,the_min)
+		res=np.dstack(res)[0].tolist()
+#		the_max=0
+#		the_min=0
+#		for row in range(len(res)):
+#			c_max=max(res[row])
+#			c_min=min(res[row])
+#			if c_max>the_max:
+#				the_max=c_max
+#			if c_min<the_min:
+#				the_min=c_min
+#		print(the_max,the_min)
 		#print(sorted(r)[:20])
 		self.k_means(res,self.class_num)
 
@@ -157,5 +192,5 @@ class Clustering():
 
 if __name__=='__main__':
 	c=Clustering()
-	#c.k_means(c.data,c.class_num)
-	c.spectral(3)
+	#c.k_means(np.array(c.data),c.class_num)
+	c.spectral(9)
