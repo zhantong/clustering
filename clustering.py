@@ -174,11 +174,14 @@ class Clustering():
 		#l=d-w
 #		for row in range(self.data_num):
 #			w[row][row]=-sum(w[row])-1
-		r,v=np.linalg.eig(w)
-		r=r.tolist()
 		res=[]
-		for item in sorted(r)[:self.class_num]:
-			res.append(v[r.index(item)])
+		r,v=np.linalg.eig(w)
+		for arg in np.argsort(r)[:self.class_num]:
+			res.append(v[arg])
+#		r=r.tolist()
+#		res=[]
+#		for item in sorted(r)[:self.class_num]:
+#			res.append(v[r.index(item)])
 		res=np.dstack(res)[0].tolist()
 #		the_max=0
 #		the_min=0
