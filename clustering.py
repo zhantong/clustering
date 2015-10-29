@@ -20,12 +20,12 @@ class Clustering():
 		print('1:%i\t-1:%i'%(last.count('1'),last.count('-1')))
 		#print(class_num)
 
-	def get_random(self):
+	def get_random(self,feature_num):
 		#return [random.random() for x in range(self.feature_num)]
-		return [random.uniform(-0.2,0.5) for x in range(self.feature_num)]
+		return [random.uniform(-0.3,0.2) for x in range(feature_num)]
 	def k_means(self,data,class_num):
-		classes=[self.get_random() for x in range(class_num)]
 		feature_num=len(data[0])
+		classes=[self.get_random(feature_num) for x in range(class_num)]
 		#print(c)
 		while 1:
 			new=[[0]*feature_num for x in range(class_num)]
@@ -46,7 +46,7 @@ class Clustering():
 			for index,c in enumerate(new):
 				classes.append([item/count[index] for item in c])
 			print(count)
-			print(classes)
+			#print(classes)
 			#break
 	def nmf(self):
 		u=[[random.random() for column in range(self.class_num)] for row in range(self.feature_num)]
@@ -121,13 +121,15 @@ class Clustering():
 					s+=pow((a-b),2)
 				dists[row][column],dists[column][row]=s,s
 		for row in range(self.data_num):
-			for item in sorted(dists[row])[1:n+1]:
-				w[row][dists[row].index(item)]=1
-				w[dists[row].index(item)][row]=1
+			for item in sorted(dists[row])[:n+1]:
+				w[row][dists[row].index(item)]=-1
+				w[dists[row].index(item)][row]=-1
+		#for row in range(self.data_num):
+			#d[row][row]=sum(w[row])
+		#l=d-w
 		for row in range(self.data_num):
-			d[row][row]=sum(w[row])
-		l=d-w
-		r,v=linalg.eig(l)
+			w[row][row]=-sum(w[row])-1
+		r,v=linalg.eig(w)
 		r=r.tolist()
 		res=[]
 		for item in sorted(r)[:self.class_num]:
