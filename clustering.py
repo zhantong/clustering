@@ -4,15 +4,18 @@ import time
 class Clustering():
 	def __init__(self):
 		self.data=[]
+		self.truth={}
 		self.get_data()
 	def get_data(self):
 		class_num=set()
 		last=[]
-		with open('mnist.txt','r') as f:
+		line_num=0
+		with open('german.txt','r') as f:
 			for line in f:
 				t=[float(x) for x in line.split(',')]
 				self.data.append(t[:-1])
-				last.append(t[-1])
+				self.truth[line_num]=line.rsplit(',',1)[-1]
+				line_num+=1
 		self.feature_num=len(self.data[0])
 		self.class_num=len(set(last))
 		self.data_num=len(self.data)
@@ -30,12 +33,16 @@ class Clustering():
 		feature_num=len(data[0])
 		the_max=np.max(data)
 		the_min=np.min(data)
+		print('max:%f\tmin:%f'%(the_max,the_min))
 		classes=[self.get_random(feature_num,the_min,the_max) for x in range(class_num)]
 		classes=np.array(classes)
+		determ={}
+		for i in range(class_num):
+			determ[i]=[]
 		while 1:
 			new=np.zeros((class_num,feature_num))
 			count=np.zeros((class_num,1),dtype='int')
-			for item in data:
+			for line_num,item in enumerate(data):
 				min=200000000
 				min_index=-1
 				for index,c in enumerate(classes):
@@ -44,27 +51,52 @@ class Clustering():
 					if dist<min:
 						min=dist
 						min_index=index
-				
+				determ[min_index].append(line_num)
 				new[min_index]+=item
 				count[min_index][0]+=1
+			zeros=[]
+			for index in range(len(count)):
+				if not count[index][0]:
+					zeros.append(index)
+					new[index]=classes[index]
+					#print(new[index])
+					count[index][0]=1
 			new=new/count
+			#print(new[zeros[0]])
 			if (classes==new).all():
 				break
 			classes=new
 			print(count)
+	def cal_obj_value(self,data,determ,points):
+		length_sum=0
+		for index,classes in determ.items:
+			the_sum=0
+			point=points[index]
+			for c in classes:
+				t=data[c]-point
+				the_sum+=np.sum(t*t)**0.5
+			length_sum+=the_sum/len(classes)
+		length_avg=length_sum/len(determ)
+		return length_avg
 	def nmf(self,data):
 		data=np.array(data)
 		the_max=np.max(data)
 		the_min=np.min(data)
-		u=[self.get_random(self.class_num,the_min,the_max) for row in range(self.feature_num)]
-		v=[self.get_random(self.class_num,the_min,the_max) for row in range(self.data_num)]
+		print('max:%f\tmin:%f'%(the_max,the_min))
+		u=[self.get_random(self.class_num,the_min+0.01,the_max) for row in range(self.feature_num)]
+		print(u[0])
+		print(u[1])
+		v=[self.get_random(self.class_num,the_min+0.01,the_max) for row in range(self.data_num)]
 		u=np.array(u)
 		v=np.array(v)
 		x=data.T
-		n=50
+		n=20
 		while n:
+			#u=u*(x*v)/(u*v.T*v)
+			#v=v*(x.T*u)/(v*u.T*u)
 			u=u*np.dot(x,v)/np.dot(np.dot(u,v.T),v)
 			v=v*np.dot(x.T,u)/np.dot(np.dot(v,u.T),u)
+			print(n)
 			n-=1
 		u_s=np.sum(u*u,axis=0)**0.5
 		t=np.tile(u_s,(self.data_num,1))
@@ -109,6 +141,6 @@ class Clustering():
 
 if __name__=='__main__':
 	c=Clustering()
-	#c.k_means(c.data,c.class_num)
+	c.k_means(c.data,c.class_num)
 	#c.nmf(c.data)
-	c.spectral(3)
+	#c.spectral(3)
