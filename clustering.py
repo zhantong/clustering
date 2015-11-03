@@ -51,14 +51,28 @@ class Clustering():
 				count[min_index][0] += 1
 			new = new / count
 			if (classes == new).all():
-				print(self.cal_obj_value(data, determ, classes))
-				print(self.cal(determ))
-				print(self.purity(self.cal(determ)))
-				print(self.gini_index(self.cal(determ)))
-				break
+				obj_value=self.cal_obj_value(data, determ, classes)
+				return obj_value,determ
 			classes = new
 			# print(count)
-			print([len(x) for x in determ.values()])
+			#print([len(x) for x in determ.values()])
+	def cal_k_means(self,data=[],class_num=None):
+		if not len(data):
+			data=self.data
+		class_num=class_num or self.class_num
+		min_value=INF
+		min_determ=None
+		print('k-means:')
+		for i in range(10):
+			value,determ=self.k_means(data,class_num)
+			print('第%i次，objective value: %f'%(i+1,value))
+			if value<min_value:
+				min_value=value
+				min_determ=determ
+		clus=self.cal(min_determ)
+		print('选择最小值为: %f\tpurity: %f\tgini index: %f'%(min_value,self.purity(clus),self.gini_index(clus)))
+		#print(self.purity(clus))
+		#print(self.gini_index(clus))
 
 	def cal_obj_value(self, data, determ, points):
 		the_sum = 0
@@ -120,12 +134,13 @@ class Clustering():
 			n -= 1
 		t=x-np.dot(u,v.T)
 		j=np.sum(t*t)
-		print(j)
+		return j,u,v
+
+		self.cal_nmf(v)
+	def do_nmf(self,u,v,data_num):
 		u_s = np.sum(u * u, axis=0)**0.5
 		t = np.tile(u_s, (data_num, 1))
-		v = v * t
-		self.cal_nmf(v)
-	def cal_nmf(self,v):
+		v = v * t		
 		maxs = np.argmax(v, axis=1)
 		clus = {}
 		for i in range(self.class_num):
@@ -135,6 +150,7 @@ class Clustering():
 			if not label in clus[c]:
 				clus[c][label] = 0
 			clus[c][label] += 1
+		return clus
 		print(clus)
 		print(self.purity(clus))
 		print(self.gini_index(clus))
@@ -142,6 +158,22 @@ class Clustering():
 		for arg in maxs:
 			count[arg] += 1
 		print(count)
+	def cal_nmf(self,data):
+		min_j=INF
+		min_u=None
+		min_v=None
+		print('NMF:')
+		for i in range(10):
+			j,u,v=self.nmf(data)
+			print('第%i次，objective value: %f'%(i+1,j))
+			if j<min_j:
+				min_j=j
+				min_u=u
+				min_v=v
+		clus=self.do_nmf(min_u,min_v,len(data))
+		print('选择最小值为: %f\tpurity: %f\tgini index: %f'%(min_j,self.purity(clus),self.gini_index(clus)))
+		#print(self.purity(clus))
+		#print(self.gini_index(clus))
 	def cal_matrix(self,data,dists,data_num):
 		global q
 		while not q.empty():
@@ -150,11 +182,8 @@ class Clustering():
 				t = data[row] - data[i]
 				s = np.sum(t * t)
 				dists[row][i], dists[i][row] = s, s
-	def spectral(self, n):
-
-		data = self.data
+	def spectral(self, data,n):
 		data_num = len(data)
-		print(data_num)
 		dists = np.zeros((data_num, data_num))
 		w = np.zeros((data_num, data_num), dtype='int')
 #		global q
@@ -180,8 +209,14 @@ class Clustering():
 		for arg in np.argsort(r)[:self.class_num]:
 			res.append(v[arg])
 		res = np.dstack(res)[0]
-		self.k_means(res, self.class_num)
-
+		return res
+		#self.cal_k_means(res, self.class_num)
+	def cal_spectral(self,data):
+		print('Spectral Clustering:')
+		for n in [3,6,9]:
+			print('nearest neighbors n: %i'%n)
+			res=self.spectral(data,n)
+			self.cal_k_means(res)
 
 	def multi_thread(self, num, target,data,dists,data_num):  # 多线程模板
 		threads = []
@@ -193,14 +228,21 @@ class Clustering():
 		for d in threads:
 			d.join()
 
-
+	def start_all(self):
+		self.cal_k_means(self.data)
+		print('-'*20)
+		self.cal_nmf(self.data)
+		print('-'*20)
+		self.cal_spectral(self.data)
+		print('all done!')
 
 
 
 
 if __name__=='__main__':
 	c=Clustering('german.txt')
-	c.k_means()
-	#c.nmf(c.data)
-	#c.spectral(3)
+	c.start_all()
+	#c.cal_k_means()
+	#c.cal_nmf(c.data)
+	#c.cal_spectral(c.data)
 	#c.multi_thread(10,c.spectral)
