@@ -117,7 +117,7 @@ class Clustering():
 		return g_avg
 
 	def nmf(self,data):
-		data=np.array(data)
+		data=np.where(data==0,1e-10,data)
 		the_max=np.max(data)
 		the_min=np.min(data)
 		print('max:%f\tmin:%f'%(the_max,the_min))
@@ -179,6 +179,6 @@ class Clustering():
 
 if __name__=='__main__':
 	c=Clustering()
-	c.k_means(c.data,c.class_num)
-	#c.nmf(c.data)
+	#c.k_means(c.data,c.class_num)
+	c.nmf(c.data)
 	#c.spectral(3)
