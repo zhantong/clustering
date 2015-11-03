@@ -8,32 +8,24 @@ mutex=threading.Lock()
 
 class Clustering():
 
-	def __init__(self):
+	def __init__(self,file_name):
 		self.data = []
 		self.truth = {}
+		self.file_name=file_name
 		self.get_data()
 
-	def get_data(self):
+	def get_data(self,file_name=None,class_num=None):
+		file_name=file_name or self.file_name
 		class_num = set()
-		last = []
 		line_num = 0
-		with open('mnist.txt', 'r') as f:
-			for line in f:
+		with open(self.file_name, 'r') as f:
+			for line_num,line in enumerate(f):
 				t = [float(x) for x in line.split(',')]
 				self.data.append(t[:-1])
 				self.truth[line_num] = line.rsplit(',', 1)[-1].strip()
-				line_num += 1
-		# print(self.truth)
-		self.feature_num = len(self.data[0])
-		self.class_num = len(set(self.truth.values()))
-		self.data_num = len(self.data)
+		self.class_num = class_num or len(set(self.truth.values()))
 		print('class number:', self.class_num)
-		self.data = np.array(self.data)
-		class_set = sorted(set(last))
-		for class_name in class_set:
-			print('%i:%i' % (class_name, last.count(class_name)), end='\t')
-		# print('1:%i\t-1:%i'%(last.count('1'),last.count('-1')))
-		# print(class_num)
+
 
 	def get_random(self, length, min, max):
 		return [random.uniform(min, max) for x in range(length)]
@@ -131,29 +123,31 @@ class Clustering():
 
 	def nmf(self, data):
 		data = np.where(data == 0, 1e-10, data)
+		feature_num=len(data[0])
+		data_num=len(data)
 		the_max = np.max(data)
 		the_min = np.min(data)
 		print('max:%f\tmin:%f' % (the_max, the_min))
-		u = [self.get_random(self.class_num, the_min + 0.01, the_max) for row in range(self.feature_num)]
-		v = [self.get_random(self.class_num, the_min + 0.01, the_max) for row in range(self.data_num)]
+		u = [[random.random() for column in range(self.class_num)] for row in range(feature_num)]
+		v = [[random.random() for column in range(self.class_num)] for row in range(data_num)]
 		u = np.array(u)
 		v = np.array(v)
 		x = data.T
 		n = 50
 		while n:
-			# u=u*(x*v)/(u*v.T*v)
-			# v=v*(x.T*u)/(v*u.T*u)
-
-			last_u = u
 			u = u * np.dot(x, v) / np.dot(np.dot(u, v.T), v)
 			v = v * np.dot(x.T, u) / np.dot(np.dot(v, u.T), u)
-			if (last_u == u).all():
-				print('OK')
-			# print(n)
 			n -= 1
 		u_s = np.sum(u * u, axis=0)**0.5
-		t = np.tile(u_s, (self.data_num, 1))
+		t = np.tile(u_s, (data_num, 1))
 		v = v * t
+		t=np.tile(u_s, (feature_num, 1))
+		u=u/t
+		t=x-np.dot(u,v.T)
+		j=np.sum(t*t)
+		print(j)
+		self.cal_nmf(v)
+	def cal_nmf(self,v):
 		maxs = np.argmax(v, axis=1)
 		clus = {}
 		for i in range(self.class_num):
@@ -170,7 +164,6 @@ class Clustering():
 		for arg in maxs:
 			count[arg] += 1
 		print(count)
-
 	def cal_matrix(self,data,dists,data_num):
 		global q
 		while not q.empty():
@@ -233,8 +226,8 @@ class Clustering():
 
 
 if __name__=='__main__':
-	c=Clustering()
-	c.k_means(c.data,c.class_num)
-	# c.nmf(c.data)
+	c=Clustering('german.txt')
+	#c.k_means(c.data,c.class_num)
+	c.nmf(c.data)
 	#c.spectral(3)
 	#c.multi_thread(10,c.spectral)
