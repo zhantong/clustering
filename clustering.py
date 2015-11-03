@@ -10,7 +10,7 @@ class Clustering():
 		class_num=set()
 		last=[]
 		line_num=0
-		with open('mnist.txt','r') as f:
+		with open('german.txt','r') as f:
 			for line in f:
 				t=[float(x) for x in line.split(',')]
 				self.data.append(t[:-1])
@@ -67,10 +67,12 @@ class Clustering():
 			#print(new[zeros[0]])
 			if (classes==new).all():
 				print(self.cal_obj_value(self.data,determ,classes))
-
+				print(self.cal(determ))
+				print(self.purity(self.cal(determ)))
+				print(self.gini_index(self.cal(determ)))
 				break
 			classes=new
-			print(count)
+			#print(count)
 			print([len(x) for x in determ.values()])
 	def cal_obj_value(self,data,determ,points):
 		the_sum=0
@@ -80,6 +82,40 @@ class Clustering():
 				t=data[c]-point
 				the_sum+=np.sum(t*t)
 		return the_sum
+	def cal(self,determ):
+		clus={}
+		for index,classes in determ.items():
+			clus[index]={}
+			for c in classes:
+				label=self.truth[c]
+				if not label in clus[index]:
+					clus[index][label]=0
+				clus[index][label]+=1
+		return clus
+	def purity(self,clus):
+		sum_p=0
+		sum_m=0
+		for classes in clus.values():
+			if classes:
+				sum_p+=max(classes.values())
+				sum_m+=sum(classes.values())
+			print(sum_p,sum_m)
+		p=sum_p/sum_m
+		return p
+	def gini_index(self,clus):
+		sum_gm=0
+		sum_m=0
+		for classes in clus.values():
+			if classes:
+				m=sum(classes.values())
+				g=1
+				for c in classes.values():
+					g-=(c/m)**2
+				sum_gm+=g*m
+				sum_m+=m
+		g_avg=sum_gm/sum_m
+		return g_avg
+
 	def nmf(self,data):
 		data=np.array(data)
 		the_max=np.max(data)
