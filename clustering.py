@@ -10,14 +10,15 @@ class Clustering():
 		class_num=set()
 		last=[]
 		line_num=0
-		with open('german.txt','r') as f:
+		with open('mnist.txt','r') as f:
 			for line in f:
 				t=[float(x) for x in line.split(',')]
 				self.data.append(t[:-1])
-				self.truth[line_num]=line.rsplit(',',1)[-1]
+				self.truth[line_num]=line.rsplit(',',1)[-1].strip()
 				line_num+=1
+		#print(self.truth)
 		self.feature_num=len(self.data[0])
-		self.class_num=len(set(last))
+		self.class_num=len(set(self.truth.values()))
 		self.data_num=len(self.data)
 		print('class number:',self.class_num)
 		self.data=np.array(self.data)
@@ -37,9 +38,10 @@ class Clustering():
 		classes=[self.get_random(feature_num,the_min,the_max) for x in range(class_num)]
 		classes=np.array(classes)
 		determ={}
-		for i in range(class_num):
-			determ[i]=[]
+
 		while 1:
+			for i in range(class_num):
+				determ[i]=[]
 			new=np.zeros((class_num,feature_num))
 			count=np.zeros((class_num,1),dtype='int')
 			for line_num,item in enumerate(data):
@@ -64,20 +66,20 @@ class Clustering():
 			new=new/count
 			#print(new[zeros[0]])
 			if (classes==new).all():
+				print(self.cal_obj_value(self.data,determ,classes))
+
 				break
 			classes=new
 			print(count)
+			print([len(x) for x in determ.values()])
 	def cal_obj_value(self,data,determ,points):
-		length_sum=0
-		for index,classes in determ.items:
-			the_sum=0
+		the_sum=0
+		for index,classes in determ.items():
 			point=points[index]
 			for c in classes:
 				t=data[c]-point
-				the_sum+=np.sum(t*t)**0.5
-			length_sum+=the_sum/len(classes)
-		length_avg=length_sum/len(determ)
-		return length_avg
+				the_sum+=np.sum(t*t)
+		return the_sum
 	def nmf(self,data):
 		data=np.array(data)
 		the_max=np.max(data)
