@@ -2,7 +2,9 @@ import random
 import numpy as np
 import time
 import threading
-
+import queue
+q=queue.Queue()
+mutex=threading.Lock()
 
 class Clustering():
 
@@ -41,9 +43,9 @@ class Clustering():
 		the_max = np.max(data)
 		the_min = np.min(data)
 		print('max:%f\tmin:%f' % (the_max, the_min))
-		classes = [self.get_random(feature_num, the_min, the_max)
-					for x in range(class_num)]
-		classes = np.array(classes)
+		#classes = [self.get_random(feature_num, the_min, the_max) for x in range(class_num)]
+		#classes = np.array(classes)
+		classes=data[random.sample(range(len(data)),class_num)]
 		determ = {}
 
 		while 1:
@@ -132,12 +134,8 @@ class Clustering():
 		the_max = np.max(data)
 		the_min = np.min(data)
 		print('max:%f\tmin:%f' % (the_max, the_min))
-		u = [self.get_random(self.class_num, the_min + 0.01, the_max)
-					for row in range(self.feature_num)]
-		print(u[0])
-		print(u[1])
-		v = [self.get_random(self.class_num, the_min + 0.01, the_max)
-					for row in range(self.data_num)]
+		u = [self.get_random(self.class_num, the_min + 0.01, the_max) for row in range(self.feature_num)]
+		v = [self.get_random(self.class_num, the_min + 0.01, the_max) for row in range(self.data_num)]
 		u = np.array(u)
 		v = np.array(v)
 		x = data.T
@@ -173,65 +171,34 @@ class Clustering():
 			count[arg] += 1
 		print(count)
 
-	def spectral(self, n,start,end):
+	def cal_matrix(self,data,dists,data_num):
+		global q
+		while not q.empty():
+			row=q.get()
+			for i in range(data_num):
+				t = data[row] - data[i]
+				s = np.sum(t * t)
+				dists[row][i], dists[i][row] = s, s
+	def spectral(self, n):
+
 		data = self.data
 		data_num = len(data)
 		print(data_num)
 		dists = np.zeros((data_num, data_num))
 		w = np.zeros((data_num, data_num), dtype='int')
+		global q
+		start=time.time()
+		for row in range(data_num):
+			q.put(row)
+		self.multi_thread(30,self.cal_matrix,data,dists,data_num)
 #		for row in range(data_num):
 #			print(row)
-#			stack=[]
-#			for column in range(n+1):
-#				t=data[row]-data[column]
-#				s=np.sum(t*t)
-#				stack.append(s)
-#			stack=sorted(stack)
-#			for column in range(n+1,data_num):
-#				t=data[row]-data[column]
-#				t=sorted(t,reverse=True)
-#				the_sum=0
-#				flag=1
-#				for k in t[:100]:
-#					the_sum+=k*k
-#				if the_sum>=stack[-1]:
-# print('continue')
-#					continue
-#				for k in t[100:]:
-#					the_sum+=k*k
-#					if the_sum>=stack[-1]:
-#						flag=0
-#						break
-#				if flag:
-#					stack[-1]=the_sum
-#					stack=sorted(stack)
-#		return
-		for row in range(start,end):
-			stack = []
-			print(row)
-			for column in range(n + 1):
-				t = data[row] - data[column]
-				s = np.sum(t * t)
-				stack.append(s)
-			stack = sorted(stack)
-			for column in range(n + 1, data_num):
-				t = data[row] - data[column]
-				d = np.sort(t)[-100:]
-				if np.sum(d * d) >= stack[-1]:
-					continue
-				s = np.sum(t * t)
-				if s >= stack[-1]:
-					continue
-				else:
-					stack[-1] = s
-					stack = sorted(stack)
-
-		for row in range(data_num):
-			print(row)
-			for column in range(row, data_num):
-				t = data[row] - data[column]
-				s = np.sum(t * t)
-				dists[row][column], dists[column][row] = s, s
+#			for column in range(row, data_num):
+#				t = data[row] - data[column]
+#				s = np.sum(t * t)
+#				dists[row][column], dists[column][row] = s, s
+		end=time.time()
+		print(end-start)
 		print('1')
 		sort_all = np.argsort(dists)
 		print('2')
@@ -250,12 +217,10 @@ class Clustering():
 		self.k_means(res, self.class_num)
 
 
-	def multi_thread(self, num, target):  # 多线程模板
+	def multi_thread(self, num, target,data,dists,data_num):  # 多线程模板
 		threads = []
-		n=0
 		for i in range(num):
-			d = threading.Thread(target=target,args=(3,n,n+1000))
-			n+=1000
+			d = threading.Thread(target=target,args=(data,dists,data_num))
 			threads.append(d)
 		for d in threads:
 			d.start()
@@ -269,7 +234,7 @@ class Clustering():
 
 if __name__=='__main__':
 	c=Clustering()
-	# c.k_means(c.data,c.class_num)
+	c.k_means(c.data,c.class_num)
 	# c.nmf(c.data)
 	#c.spectral(3)
-	c.multi_thread(10,c.spectral)
+	#c.multi_thread(10,c.spectral)
