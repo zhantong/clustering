@@ -10,7 +10,7 @@ class Clustering():
 		class_num=set()
 		last=[]
 		line_num=0
-		with open('german.txt','r') as f:
+		with open('mnist.txt','r') as f:
 			for line in f:
 				t=[float(x) for x in line.split(',')]
 				self.data.append(t[:-1])
@@ -99,7 +99,7 @@ class Clustering():
 			if classes:
 				sum_p+=max(classes.values())
 				sum_m+=sum(classes.values())
-			print(sum_p,sum_m)
+			#print(sum_p,sum_m)
 		p=sum_p/sum_m
 		return p
 	def gini_index(self,clus):
@@ -128,18 +128,33 @@ class Clustering():
 		u=np.array(u)
 		v=np.array(v)
 		x=data.T
-		n=20
+		n=50
 		while n:
 			#u=u*(x*v)/(u*v.T*v)
 			#v=v*(x.T*u)/(v*u.T*u)
+
+			last_u=u
 			u=u*np.dot(x,v)/np.dot(np.dot(u,v.T),v)
 			v=v*np.dot(x.T,u)/np.dot(np.dot(v,u.T),u)
-			print(n)
+			if (last_u==u).all():
+				print('OK')			
+			#print(n)
 			n-=1
 		u_s=np.sum(u*u,axis=0)**0.5
 		t=np.tile(u_s,(self.data_num,1))
 		v=v*t
 		maxs=np.argmax(v,axis=1)
+		clus={}
+		for i in range(self.class_num):
+			clus[i]={}
+		for index,c in enumerate(maxs):
+			label=self.truth[index]
+			if not label in clus[c]:
+				clus[c][label]=0
+			clus[c][label]+=1
+		print(clus)
+		print(self.purity(clus))
+		print(self.gini_index(clus))
 		count=[0]*self.class_num
 		for arg in maxs:
 			count[arg]+=1
