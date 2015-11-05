@@ -176,7 +176,7 @@ class Clustering():
             w[row][row] = -np.sum(w[row]) - 1
         print('计算特征值与特征向量...')
         # 这里采用scipy专门用于计算稀疏矩阵特征值特征向量的方法，且可以指定计算的特征值个数，这里限定为特征值从小到达排，计算前class_num个
-        r, v = scipy.sparse.linalg.eigsh(w, k=self.class_num, which='SA')
+        r, v = scipy.sparse.linalg.eigsh(w, k=self.class_num + 1, which='SA')
 #		r, v = np.linalg.eig(w)
 #		print('2')
 #		for arg in np.argsort(r)[:self.class_num]:
@@ -184,7 +184,7 @@ class Clustering():
 #		print('3')
 #		res = np.dstack(res)[0]
 #		print('4')
-        res = v
+        res = v[1:]
         return res  # 返回class_num个特征向量
 
     def cal_spectral(self, data):
@@ -323,7 +323,8 @@ class Clustering():
         return res
         #self.cal_k_means(res, self.class_num)
 if __name__ == '__main__':
-    # c=Clustering('german.txt')
+    c=Clustering('german.txt')
+    c.start_all()
     c = Clustering('mnist.txt')
     c.start_all()
     # c.cal_k_means()
