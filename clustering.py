@@ -126,28 +126,6 @@ class Clustering():
 
         self.cal_nmf(v)
 
-    def do_nmf(self, u, v, data_num):
-        """NMF的附属部分
-        对特定的（最优的）u和v，通过分析矩阵v，得到某行（点）归属到哪个中心点
-        具体即v中每行最大值的下标，即归属到的中心点的编号
-        """
-        #u_s = np.sum(u * u, axis=0)**0.5
-        #t = np.tile(u_s, (data_num, 1))
-        #v = v * t
-        maxs = np.argmax(v, axis=1)  # 得到v中每行最大值的下标
-        clus = {i: {} for i in range(self.class_num)}  # 初始化clus
-        for index, c in enumerate(maxs):
-            label = self.truth[index]
-            if not label in clus[c]:
-                clus[c][label] = 0
-            clus[c][label] += 1
-        return clus
-
-        count = [0] * self.class_num
-        for arg in maxs:
-            count[arg] += 1
-        print(count)
-
     def cal_nmf(self, data):
         """NMF的控制部分
         主要控制NMF重复计算次数
