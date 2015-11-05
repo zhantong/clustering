@@ -2,10 +2,6 @@ import random
 import numpy as np
 import scipy.sparse.linalg
 import time
-import threading
-import queue
-q=queue.Queue()
-mutex=threading.Lock()
 INF=200000000
 class Clustering():
 
@@ -211,14 +207,7 @@ class Clustering():
 		print('选择最小值为: %f\tpurity: %f\tgini index: %f'%(min_j,self.purity(clus),self.gini_index(clus)))
 		#print(self.purity(clus))
 		#print(self.gini_index(clus))
-	def cal_matrix(self,data,dists,data_num):
-		global q
-		while not q.empty():
-			row=q.get()
-			for i in range(data_num):
-				t = data[row] - data[i]
-				s = np.sum(t * t)
-				dists[row][i], dists[i][row] = s, s
+
 	def spectral_bak(self, data,n):
 		data_num = len(data)
 		dists = np.zeros((data_num, data_num))
@@ -278,15 +267,7 @@ class Clustering():
 			res=self.spectral(data,n)
 			self.cal_k_means(res)
 
-	def multi_thread(self, num, target,data,dists,data_num):  # 多线程模板
-		threads = []
-		for i in range(num):
-			d = threading.Thread(target=target,args=(data,dists,data_num))
-			threads.append(d)
-		for d in threads:
-			d.start()
-		for d in threads:
-			d.join()
+
 
 	def start_all(self):
 		self.cal_k_means(self.data)
@@ -300,10 +281,9 @@ class Clustering():
 
 
 if __name__=='__main__':
-	#c=Clustering('german.txt')
-	c=Clustering('mnist.txt')
-	#c.start_all()
-	c.cal_k_means()
+	c=Clustering('german.txt')
+	#c=Clustering('mnist.txt')
+	c.start_all()
+	#c.cal_k_means()
 	#c.cal_nmf(c.data)
 	#c.cal_spectral(c.data)
-	#c.multi_thread(10,c.spectral)
