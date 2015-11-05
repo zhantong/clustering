@@ -1,7 +1,6 @@
 import random
 import numpy as np
 import scipy.sparse.linalg
-import time
 INF=200000000
 class Clustering():
 
@@ -9,7 +8,9 @@ class Clustering():
 		self.data = []
 		self.truth = {}
 		self.file_name=file_name
+		self.class_num=None
 		self.get_data()
+		
 
 	def get_data(self,file_name=None,class_num=None):
 		file_name=file_name or self.file_name
@@ -69,23 +70,19 @@ class Clustering():
 
 	def test(self,data,args,points):
 		s=sum(np.linalg.norm(point-data[np.where(args==index)[0]]) for index,point in enumerate(points))
-		print(s)
-		for index,point in enumerate(points):
-			#print(data[np.where(args==index)[0]])
-			#print(np.linalg.norm(point-data[np.where(args==index)[0]]))
-			pass
 		return s
 
 
 
 	def cal_k_means(self,data=[],class_num=None):
+		k_means_repeat_time=10
 		if not len(data):
 			data=self.data
 		class_num=class_num or self.class_num
 		min_value=INF
 		min_determ=None
 		print('k-means:')
-		for i in range(10):
+		for i in range(k_means_repeat_time):
 			#value,determ=self.k_means(data,class_num)
 			value,determ=self.k_means_bak(data,class_num)
 			print('第%i次: objective value: %f'%(i+1,value))
@@ -95,8 +92,7 @@ class Clustering():
 		#clus=self.cal(min_determ)
 		clus=self.cal_bak(min_determ)
 		print('选择最小值为: %f\tpurity: %f\tgini index: %f\t分布: '%(min_value,self.purity(clus),self.gini_index(clus)),clus)
-		#print(self.purity(clus))
-		#print(self.gini_index(clus))
+
 
 	def cal_obj_value(self, data, determ, points):
 		the_sum = 0
@@ -118,9 +114,7 @@ class Clustering():
 				clus[index][label] += 1
 		return clus
 	def cal(self,args):
-		clus = {}
-		for i in range(self.class_num):
-			clus[i] = {}
+		clus = {i:{} for i in range(self.class_num)}
 		for index, c in enumerate(args):
 			label = self.truth[index]
 			if not label in clus[c]:
@@ -152,19 +146,17 @@ class Clustering():
 		return g_avg
 
 	def nmf(self, data):
-		data = np.where(data == 0, 1e-10, data)
+		nmf_itera_time=50
+		data = np.where(data == 0, 1e-15, data)
 		feature_num=len(data[0])
 		data_num=len(data)
-		u = [[random.random() for column in range(self.class_num)] for row in range(feature_num)]
-		v = [[random.random() for column in range(self.class_num)] for row in range(data_num)]
-		u = np.array(u)
-		v = np.array(v)
+		u=np.random.rand(feature_num,self.class_num)
+		v=np.random.rand(data_num,self.class_num)
 		x = data.T
-		n = 50
-		while n:
+		while nmf_itera_time:
 			u = u * np.dot(x, v) / np.dot(np.dot(u, v.T), v)
 			v = v * np.dot(x.T, u) / np.dot(np.dot(v, u.T), u)
-			n -= 1
+			nmf_itera_time -= 1
 		t=x-np.dot(u,v.T)
 		j=np.sum(t*t)
 		return j,u,v
@@ -175,28 +167,25 @@ class Clustering():
 		#t = np.tile(u_s, (data_num, 1))
 		#v = v * t		
 		maxs = np.argmax(v, axis=1)
-		clus = {}
-		for i in range(self.class_num):
-			clus[i] = {}
+		clus = {i:{} for i in range(self.class_num)}
 		for index, c in enumerate(maxs):
 			label = self.truth[index]
 			if not label in clus[c]:
 				clus[c][label] = 0
 			clus[c][label] += 1
 		return clus
-		print(clus)
-		print(self.purity(clus))
-		print(self.gini_index(clus))
+
 		count = [0] * self.class_num
 		for arg in maxs:
 			count[arg] += 1
 		print(count)
 	def cal_nmf(self,data):
+		nmf_repeat_time=10
 		min_j=INF
 		min_u=None
 		min_v=None
 		print('NMF:')
-		for i in range(10):
+		for i in range(nmf_repeat_time):
 			j,u,v=self.nmf(data)
 			print('第%i次，objective value: %f'%(i+1,j))
 			if j<min_j:
@@ -205,8 +194,6 @@ class Clustering():
 				min_v=v
 		clus=self.do_nmf(min_u,min_v,len(data))
 		print('选择最小值为: %f\tpurity: %f\tgini index: %f'%(min_j,self.purity(clus),self.gini_index(clus)))
-		#print(self.purity(clus))
-		#print(self.gini_index(clus))
 
 	def spectral_bak(self, data,n):
 		data_num = len(data)
@@ -242,14 +229,13 @@ class Clustering():
 		w = np.zeros((data_num, data_num), dtype='float')
 		for row in range(data_num):
 			if row%100==0:
-				print(row)
+				print('已处理%i/%i'%(row,data_num))
 			dist=np.linalg.norm(data-data[row],axis=1)
 			for column in np.argsort(dist)[:n+1]:
 				w[row][column],w[column][row]=-1,-1
 		for row in range(data_num):
 			w[row][row] = -np.sum(w[row]) - 1
-		print('1')
-		res = []
+		print('计算特征值与特征向量...')
 		r,v=scipy.sparse.linalg.eigsh(w,k=self.class_num,which='SA')
 #		r, v = np.linalg.eig(w)
 #		print('2')
@@ -261,8 +247,9 @@ class Clustering():
 		res=v
 		return res
 	def cal_spectral(self,data):
+		neighbors=[3,6,9]
 		print('Spectral Clustering:')
-		for n in [3,6,9]:
+		for n in neighbors:
 			print('nearest neighbors n: %i'%n)
 			res=self.spectral(data,n)
 			self.cal_k_means(res)
