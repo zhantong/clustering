@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import scipy.sparse.linalg
 import time
 import threading
 import queue
@@ -25,7 +26,7 @@ class Clustering():
 		self.data=np.array(self.data)
 		print('class number:', self.class_num)
 
-	def k_means(self, data=[], class_num=None):
+	def k_means_bak(self, data=[], class_num=None):
 		if not len(data):
 			data=self.data
 		class_num=class_num or self.class_num
@@ -56,6 +57,31 @@ class Clustering():
 			classes = new
 			# print(count)
 			#print([len(x) for x in determ.values()])
+	def k_means(self,data=[],class_num=None):
+		if not len(data):
+			data=self.data
+		class_num=class_num or self.class_num
+		classes=data[random.sample(range(len(data)),class_num)]
+		while 1:
+			length=np.column_stack((np.linalg.norm(data-x,axis=1) for x in classes))
+			args=np.argmin(length,axis=1)
+			new=np.array([np.sum(data[np.where(args==i)[0]],axis=0)/(args==i).sum() for i in range(class_num)])
+			if (classes==new).all():
+				obj_value=self.test(data,args,classes)
+				return obj_value,args
+			classes=new
+
+	def test(self,data,args,points):
+		s=sum(np.linalg.norm(point-data[np.where(args==index)[0]]) for index,point in enumerate(points))
+		print(s)
+		for index,point in enumerate(points):
+			#print(data[np.where(args==index)[0]])
+			#print(np.linalg.norm(point-data[np.where(args==index)[0]]))
+			pass
+		return s
+
+
+
 	def cal_k_means(self,data=[],class_num=None):
 		if not len(data):
 			data=self.data
@@ -64,13 +90,15 @@ class Clustering():
 		min_determ=None
 		print('k-means:')
 		for i in range(10):
-			value,determ=self.k_means(data,class_num)
-			print('第%i次，objective value: %f'%(i+1,value))
+			#value,determ=self.k_means(data,class_num)
+			value,determ=self.k_means_bak(data,class_num)
+			print('第%i次: objective value: %f'%(i+1,value))
 			if value<min_value:
 				min_value=value
 				min_determ=determ
-		clus=self.cal(min_determ)
-		print('选择最小值为: %f\tpurity: %f\tgini index: %f'%(min_value,self.purity(clus),self.gini_index(clus)))
+		#clus=self.cal(min_determ)
+		clus=self.cal_bak(min_determ)
+		print('选择最小值为: %f\tpurity: %f\tgini index: %f\t分布: '%(min_value,self.purity(clus),self.gini_index(clus)),clus)
 		#print(self.purity(clus))
 		#print(self.gini_index(clus))
 
@@ -83,7 +111,7 @@ class Clustering():
 				the_sum += np.sum(t * t)
 		return the_sum
 
-	def cal(self, determ):
+	def cal_bak(self, determ):
 		clus = {}
 		for index, classes in determ.items():
 			clus[index] = {}
@@ -93,7 +121,16 @@ class Clustering():
 					clus[index][label] = 0
 				clus[index][label] += 1
 		return clus
-
+	def cal(self,args):
+		clus = {}
+		for i in range(self.class_num):
+			clus[i] = {}
+		for index, c in enumerate(args):
+			label = self.truth[index]
+			if not label in clus[c]:
+				clus[c][label] = 0
+			clus[c][label] += 1
+		return clus
 	def purity(self, clus):
 		sum_p = 0
 		sum_m = 0
@@ -138,9 +175,9 @@ class Clustering():
 
 		self.cal_nmf(v)
 	def do_nmf(self,u,v,data_num):
-		u_s = np.sum(u * u, axis=0)**0.5
-		t = np.tile(u_s, (data_num, 1))
-		v = v * t		
+		#u_s = np.sum(u * u, axis=0)**0.5
+		#t = np.tile(u_s, (data_num, 1))
+		#v = v * t		
 		maxs = np.argmax(v, axis=1)
 		clus = {}
 		for i in range(self.class_num):
@@ -213,7 +250,7 @@ class Clustering():
 		#self.cal_k_means(res, self.class_num)
 	def spectral(self,data,n):
 		data_num=len(data)
-		w = np.zeros((data_num, data_num), dtype='int')
+		w = np.zeros((data_num, data_num), dtype='float')
 		for row in range(data_num):
 			if row%100==0:
 				print(row)
@@ -224,13 +261,15 @@ class Clustering():
 			w[row][row] = -np.sum(w[row]) - 1
 		print('1')
 		res = []
-		r, v = np.linalg.eig(w)
-		print('2')
-		for arg in np.argsort(r)[:self.class_num]:
-			res.append(v[arg])
-		print('3')
-		res = np.dstack(res)[0]
-		print('4')
+		r,v=scipy.sparse.linalg.eigsh(w,k=self.class_num,which='SA')
+#		r, v = np.linalg.eig(w)
+#		print('2')
+#		for arg in np.argsort(r)[:self.class_num]:
+#			res.append(v[arg])
+#		print('3')
+#		res = np.dstack(res)[0]
+#		print('4')
+		res=v
 		return res
 	def cal_spectral(self,data):
 		print('Spectral Clustering:')
@@ -264,7 +303,7 @@ if __name__=='__main__':
 	#c=Clustering('german.txt')
 	c=Clustering('mnist.txt')
 	#c.start_all()
-	#c.cal_k_means()
-	c.cal_nmf(c.data)
+	c.cal_k_means()
+	#c.cal_nmf(c.data)
 	#c.cal_spectral(c.data)
 	#c.multi_thread(10,c.spectral)
