@@ -182,7 +182,7 @@ class Clustering():
 				t = data[row] - data[i]
 				s = np.sum(t * t)
 				dists[row][i], dists[i][row] = s, s
-	def spectral(self, data,n):
+	def spectral_bak(self, data,n):
 		data_num = len(data)
 		dists = np.zeros((data_num, data_num))
 		w = np.zeros((data_num, data_num), dtype='int')
@@ -211,6 +211,27 @@ class Clustering():
 		res = np.dstack(res)[0]
 		return res
 		#self.cal_k_means(res, self.class_num)
+	def spectral(self,data,n):
+		data_num=len(data)
+		w = np.zeros((data_num, data_num), dtype='int')
+		for row in range(data_num):
+			if row%100==0:
+				print(row)
+			dist=np.linalg.norm(data-data[row],axis=1)
+			for column in np.argsort(dist)[:n+1]:
+				w[row][column],w[column][row]=-1,-1
+		for row in range(data_num):
+			w[row][row] = -np.sum(w[row]) - 1
+		print('1')
+		res = []
+		r, v = np.linalg.eig(w)
+		print('2')
+		for arg in np.argsort(r)[:self.class_num]:
+			res.append(v[arg])
+		print('3')
+		res = np.dstack(res)[0]
+		print('4')
+		return res
 	def cal_spectral(self,data):
 		print('Spectral Clustering:')
 		for n in [3,6,9]:
@@ -240,9 +261,10 @@ class Clustering():
 
 
 if __name__=='__main__':
-	c=Clustering('german.txt')
-	c.start_all()
+	#c=Clustering('german.txt')
+	c=Clustering('mnist.txt')
+	#c.start_all()
 	#c.cal_k_means()
-	#c.cal_nmf(c.data)
+	c.cal_nmf(c.data)
 	#c.cal_spectral(c.data)
 	#c.multi_thread(10,c.spectral)
