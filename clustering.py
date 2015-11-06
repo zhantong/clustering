@@ -1,3 +1,13 @@
+"""
+三种clustering的方法：k-means, clustering by non-negative matrix factorization (NMF), 和 spectral clustering.
+读取指定文件，start_all()即顺序开始三种clustering方法，输出的结果为其最优解的purity和gini index
+"""
+"""
+Mac OS X EL Capitan (10.11.1)
+Python (x64) 3.5
+Numpy 1.10.1
+Scipy 0.16.1
+"""
 import random
 import numpy as np
 import scipy.sparse.linalg
@@ -52,11 +62,11 @@ class Clustering():
                                    axis=0)/(args == i).sum() for i in range(class_num)])
             if (classes == new).all():  # 当新的中心点坐标与旧的完全相同时，循环结束
                 # 计算此时所有点与其对应中心点距离的和，作为此次k-means好坏的指标
-                obj_value = self.test(data, args, classes)
+                obj_value = self.cal_k_means_value(data, args, classes)
                 return obj_value, args  # 同时还返回离每个点最近的中心点的信息，供计算purity使用
             classes = new
 
-    def test(self, data, args, points):
+    def cal_k_means_value(self, data, args, points):
         """k-means附属部分，计算所有点到其中心点距离之和
         """
         s = sum(np.linalg.norm(point-data[np.where(args == index)[0]])
@@ -184,7 +194,7 @@ class Clustering():
 #		print('3')
 #		res = np.dstack(res)[0]
 #		print('4')
-        res = v[1:]
+        res = v[:,1:]
         return res  # 返回class_num个特征向量
 
     def cal_spectral(self, data):
